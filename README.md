@@ -1,4 +1,4 @@
-# Force Academia
+# OMEGA GYM
 
 Sistema web para alunos de academia, com frontend em Next.js e API Node.js conectada ao PostgreSQL. Ele permite criar conta, entrar, consultar o perfil e criar fichas de treino personalizadas.
 
@@ -34,7 +34,7 @@ Ou copie a pasta do projeto para o novo computador e abra um terminal dentro del
 Inicie o serviço PostgreSQL. Em seguida, crie o banco pelo terminal (substitua `postgres` se seu usuário for outro):
 
 ```powershell
-psql -U postgres -c "CREATE DATABASE force_academia;"
+psql -U postgres -c "CREATE DATABASE omega_gym;"
 ```
 
 Caso o banco já exista, esse comando pode ser ignorado. Guarde a senha do usuário PostgreSQL: ela será usada na configuração da API.
@@ -50,7 +50,7 @@ Abra `backend/.env` e ajuste a conexão. Exemplo para PostgreSQL instalado local
 
 ```env
 PORT=3333
-DATABASE_URL=postgresql://postgres:SUA_SENHA@localhost:5432/force_academia
+DATABASE_URL=postgresql://postgres:SUA_SENHA@localhost:5432/omega_gym
 JWT_SECRET=crie-uma-chave-longa-e-unica
 FRONTEND_URL=http://localhost:3000
 ```
@@ -107,13 +107,13 @@ Depois, acesse `http://localhost:3000`.
 O código pode ser copiado ou clonado normalmente, mas os dados dos alunos e treinos ficam no banco PostgreSQL do computador antigo. Para levá-los ao novo computador, gere um backup no computador antigo:
 
 ```powershell
-pg_dump -U postgres -d force_academia -F c -f force_academia.backup
+pg_dump -U postgres -d omega_gym -F c -f omega_gym.backup
 ```
 
-Copie o arquivo `force_academia.backup` para o novo computador. Após criar o banco vazio no novo computador, restaure:
+Copie o arquivo `omega_gym.backup` para o novo computador. Após criar o banco vazio no novo computador, restaure:
 
 ```powershell
-pg_restore -U postgres -d force_academia --clean --if-exists force_academia.backup
+pg_restore -U postgres -d omega_gym --clean --if-exists omega_gym.backup
 ```
 
 Se não precisar preservar dados anteriores, execute somente `npm run db:init` no backend para criar uma base nova.

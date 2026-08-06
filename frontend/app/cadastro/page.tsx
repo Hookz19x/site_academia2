@@ -29,7 +29,7 @@ export default function Cadastro() {
   return <div className="bg-black text-white min-h-screen font-sans flex flex-col justify-center items-center px-4 py-8 relative">
     <div className="w-full max-w-md mb-4 text-left"><Link href="/" className="text-sm font-bold text-blue-500 hover:text-white transition flex items-center gap-1">⬅ Voltar para o Início</Link></div>
     <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded-2xl space-y-6">
-      <div className="text-center space-y-2"><h2 className="text-2xl font-black uppercase tracking-tight">FORCE<span className="text-blue-500">ACADEMIA</span></h2><p className="text-sm text-gray-400">Crie sua conta e comece hoje</p></div>
+      <div className="text-center space-y-2"><h2 className="text-2xl font-black uppercase tracking-tight">OMEGA <span className="text-blue-500">GYM</span></h2><p className="text-sm text-gray-400">Crie sua conta e comece hoje</p></div>
       <form onSubmit={lidarComCadastro} className="space-y-4">
         <Campo label="Nome Completo" value={nome} onChange={setNome} placeholder="Seu nome" />
         <Campo label="E-mail" type="email" value={email} onChange={setEmail} placeholder="seu@email.com" />

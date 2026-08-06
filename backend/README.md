@@ -1,4 +1,4 @@
-# API Force Academia
+# API OMEGA GYM
 
 Para instalar o sistema completo em outro computador, consulte o [README principal](../README.md).
 
@@ -6,7 +6,7 @@ API Node.js com Express e PostgreSQL para cadastro, login, perfil e fichas de tr
 
 ## Execução
 
-1. Crie um banco PostgreSQL chamado `force_academia`.
+1. Crie um banco PostgreSQL chamado `omega_gym`.
 2. Copie `.env.example` para `.env` e ajuste a conexão e a chave JWT.
 3. Instale as dependências com `npm install`.
 4. Execute `npm run db:init` para criar as tabelas.

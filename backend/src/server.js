@@ -18,7 +18,7 @@ app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
 app.use(express.json({ limit: '1mb' }));
 
 const createToken = (id) => jwt.sign({}, process.env.JWT_SECRET, { subject: id, expiresIn: '7d' });
-const membershipCode = () => `FORCE-${Math.floor(1000 + Math.random() * 9000)}`;
+const membershipCode = () => `OMEGA-${Math.floor(1000 + Math.random() * 9000)}`;
 
 app.get('/health', async (_req, res, next) => {
   try {
@@ -116,4 +116,4 @@ app.use((error, _req, res, _next) => {
   res.status(500).json({ message: 'Erro interno do servidor.' });
 });
 
-app.listen(port, () => console.log(`API da Force Academia em http://localhost:${port}`));
+app.listen(port, () => console.log(`API da OMEGA GYM em http://localhost:${port}`));

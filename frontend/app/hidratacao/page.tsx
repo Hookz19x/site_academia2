@@ -107,7 +107,7 @@ export default function HidratacaoPage() {
 
       {/* FOOTER */}
       <footer className="border-t border-zinc-900 py-4 text-center text-[10px] text-gray-600">
-        FORCE ACADEMIA • Saúde & Performance
+        OMEGA GYM • Saúde & Performance
       </footer>
 
     </div>

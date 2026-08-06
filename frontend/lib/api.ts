@@ -1,5 +1,5 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
-const TOKEN_KEY = '@forceAcademia:token';
+const TOKEN_KEY = '@omegaGym:token';
 
 export type Usuario = { id: string; nome: string; email: string; matricula: string; plano: string; status: string; vencimento: string; idade: number | null; peso: number | null; altura: number | null };
 
