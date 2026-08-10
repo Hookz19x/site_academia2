@@ -432,7 +432,7 @@ export default function AcademiaHome() {
         </div>
 
         <div className="border-t border-zinc-900 pt-4 text-[9px] text-gray-600">
-          © {new Date().getFullYear()} OMEGA GYN. Todos os direitos reservados.
+          © {new Date().getFullYear()} OMEGA GYM. Todos os direitos reservados.
         </div>
       </footer>
 
