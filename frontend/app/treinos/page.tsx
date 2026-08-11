@@ -1,13 +1,47 @@
-'use client'; // Permite a interatividade de marcar os treinos como feitos
+'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { apiFetch, type Usuario } from '../../lib/api';
 
 export default function TreinosPage() {
-  // Estado para controlar quais exercícios já foram concluídos pelo aluno
   const [exerciciosConcluidos, setExerciciosConcluidos] = useState<number[]>([]);
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
 
-  // Lista temporária de treinos (Simulando uma ficha de Academia)
+  const getTodayKey = () => {
+    const today = new Date();
+    return `@omegaGym:treinosConcluidos_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  };
+
+  useEffect(() => {
+    // Carrega dados do usuário logado
+    apiFetch<{ user: Usuario }>('/api/me')
+      .then(({ user }) => setUsuario(user))
+      .catch(() => {
+        // Usuário visitante / não autenticado
+      });
+
+    // Carrega exercícios concluídos salvos do dia
+    try {
+      const salvos = localStorage.getItem(getTodayKey());
+      if (salvos) {
+        setExerciciosConcluidos(JSON.parse(salvos));
+      }
+    } catch {
+      // Ignora erro
+    }
+  }, []);
+
+  const salvarConcluidos = (novaLista: number[]) => {
+    setExerciciosConcluidos(novaLista);
+    try {
+      localStorage.setItem(getTodayKey(), JSON.stringify(novaLista));
+    } catch {
+      // Ignora erro
+    }
+  };
+
+  // Lista padrão de treinos da academia
   const listaTreinos = [
     {
       rotina: "Treino A - Peito e Tríceps",
@@ -41,14 +75,21 @@ export default function TreinosPage() {
     }
   ];
 
-  // Função para marcar/desmarcar exercício concluído
   const alternarConclusao = (id: number) => {
+    let novaLista: number[];
     if (exerciciosConcluidos.includes(id)) {
-      setExerciciosConcluidos(exerciciosConcluidos.filter(item => item !== id));
+      novaLista = exerciciosConcluidos.filter(item => item !== id);
     } else {
-      setExerciciosConcluidos([...exerciciosConcluidos, id]);
+      novaLista = [...exerciciosConcluidos, id];
     }
+    salvarConcluidos(novaLista);
   };
+
+  const resetarConcluidos = () => {
+    salvarConcluidos([]);
+  };
+
+  const totalExercicios = listaTreinos.reduce((acc, curr) => acc + curr.exercicios.length, 0);
 
   return (
     <div className="bg-black text-white min-h-screen font-sans flex flex-col justify-between">
@@ -64,21 +105,25 @@ export default function TreinosPage() {
           <h1 className="text-sm font-black uppercase tracking-widest text-white">
             MINHA <span className="text-blue-500">FICHA</span>
           </h1>
-          <div className="w-10"></div> {/* Espaçador para alinhar o título ao centro */}
+          <div className="w-10"></div>
         </div>
       </header>
 
-      {/* CONTEÚDO PRINCIPAL (LISTA DE TREINOS) */}
+      {/* CONTEÚDO PRINCIPAL */}
       <main className="max-w-md mx-auto w-full px-4 py-6 flex-1 space-y-8">
         
         {/* Cabeçalho do Aluno */}
         <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex justify-between items-center">
           <div>
-            <h2 className="text-sm font-bold text-white">Aluno Temporário</h2>
-            <p className="text-[11px] text-gray-400">Objetivo: Hipertrofia Geral</p>
+            <h2 className="text-sm font-bold text-white">
+              {usuario ? usuario.nome : 'Aluno OMEGA GYM'}
+            </h2>
+            <p className="text-[11px] text-gray-400">
+              {usuario ? `Matrícula: ${usuario.matricula} • ${usuario.plano}` : 'Objetivo: Hipertrofia Geral'}
+            </p>
           </div>
           <span className="text-[10px] bg-blue-500/10 border border-blue-500/40 text-blue-500 px-2 py-1 rounded font-bold uppercase">
-            Ficha Ativa
+            {exerciciosConcluidos.length}/{totalExercicios} Feitos
           </span>
         </div>
 
@@ -119,6 +164,16 @@ export default function TreinosPage() {
             </div>
           </section>
         ))}
+
+        {/* Botão para Resetar o Treino do dia se necessário */}
+        {exerciciosConcluidos.length > 0 && (
+          <button 
+            onClick={resetarConcluidos}
+            className="w-full bg-zinc-900 border border-zinc-800 hover:border-red-500/40 hover:text-red-400 text-gray-400 text-xs font-bold py-3 rounded-xl transition-all uppercase tracking-wider"
+          >
+            Limpar Marcações de Treino
+          </button>
+        )}
 
       </main>
 

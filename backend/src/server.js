@@ -29,16 +29,19 @@ app.get('/health', async (_req, res, next) => {
 
 app.post('/api/auth/register', async (req, res, next) => {
   const { nome, email, senha, idade, peso, altura } = req.body;
-  if (!nome?.trim() || !email?.trim() || !senha || senha.length < 6) {
-    return res.status(400).json({ message: 'Informe nome, e-mail e uma senha com pelo menos 6 caracteres.' });
+  const sanitizedEmail = email?.trim().toLowerCase();
+  const sanitizedNome = nome?.trim();
+
+  if (!sanitizedNome || !sanitizedEmail || !senha || senha.length < 6) {
+    return res.status(400).json({ message: 'Informe nome, e-mail válido e uma senha com pelo menos 6 caracteres.' });
   }
   try {
     const passwordHash = await bcrypt.hash(senha, 12);
     const result = await pool.query(
       `INSERT INTO users (name, email, password_hash, age, weight_kg, height_m, membership_code)
-       VALUES ($1, LOWER($2), $3, $4, $5, $6, $7)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [nome.trim(), email.trim(), passwordHash, idade || null, peso || null, altura || null, membershipCode()]
+      [sanitizedNome, sanitizedEmail, passwordHash, idade || null, peso || null, altura || null, membershipCode()]
     );
     const user = publicUser(result.rows[0]);
     res.status(201).json({ token: createToken(user.id), user });
@@ -50,10 +53,16 @@ app.post('/api/auth/register', async (req, res, next) => {
 
 app.post('/api/auth/login', async (req, res, next) => {
   const { email, senha } = req.body;
+  const sanitizedEmail = email?.trim().toLowerCase();
+
+  if (!sanitizedEmail || !senha) {
+    return res.status(400).json({ message: 'Informe seu e-mail e senha.' });
+  }
+
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = LOWER($1)', [email?.trim()]);
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [sanitizedEmail]);
     const user = result.rows[0];
-    if (!user || !(await bcrypt.compare(senha || '', user.password_hash))) {
+    if (!user || !(await bcrypt.compare(senha, user.password_hash))) {
       return res.status(401).json({ message: 'E-mail ou senha inválidos.' });
     }
     res.json({ token: createToken(user.id), user: publicUser(user) });

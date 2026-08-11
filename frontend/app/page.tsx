@@ -1,17 +1,14 @@
 'use client'; // Necessário no Next.js para componentes interativos (menu e IMC)
 
 import Image from 'next/image';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { apiFetch, type Usuario } from '../lib/api';
 
 export default function AcademiaHome() {
 
   // Estados de Autenticação
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  React.useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem('@omegaGym:token'));
-  }, []);
 
   // Estados para o cálculo do BPM
   const [batimentos10s, setBatimentos10s] = useState('');
@@ -33,6 +30,51 @@ export default function AcademiaHome() {
   const [imcResultado, setImcResultado] = useState<string | null>(null);
   const [imcStatus, setImcStatus] = useState('');
 
+  useEffect(() => {
+    const token = localStorage.getItem('@omegaGym:token');
+    setIsLoggedIn(!!token);
+
+    // Carrega cálculos salvos anteriormente
+    try {
+      const imcSalvo = localStorage.getItem('@omegaGym:calcIMC');
+      if (imcSalvo) {
+        const parsed = JSON.parse(imcSalvo);
+        setPeso(parsed.peso || '');
+        setAltura(parsed.altura || '');
+        setImcResultado(parsed.resultado || null);
+        setImcStatus(parsed.status || '');
+      }
+
+      const fcmSalvo = localStorage.getItem('@omegaGym:calcFCM');
+      if (fcmSalvo) {
+        const parsed = JSON.parse(fcmSalvo);
+        setIdadeFcm(parsed.idade || '');
+        setFcmResultado(parsed.resultado || null);
+      }
+
+      const bpmSalvo = localStorage.getItem('@omegaGym:calcBPM');
+      if (bpmSalvo) {
+        const parsed = JSON.parse(bpmSalvo);
+        setBatimentos10s(parsed.batimentos || '');
+        setBpmResultado(parsed.resultado || null);
+        setZonaAlvo(parsed.zona || '');
+      }
+    } catch {
+      // Ignora erro
+    }
+
+    // Se estiver logado, puxa os dados biométricos do perfil se ainda não informados
+    if (token) {
+      apiFetch<{ user: Usuario }>('/api/me')
+        .then(({ user }) => {
+          if (user.peso && !peso) setPeso(String(user.peso));
+          if (user.altura && !altura) setAltura(String(user.altura));
+          if (user.idade && !idadeFcm) setIdadeFcm(String(user.idade));
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   // Função para calcular o IMC
   const calcularIMC = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,15 +83,24 @@ export default function AcademiaHome() {
 
     if (p > 0 && a > 0) {
       const imc = p / (a * a);
-      setImcResultado(imc.toFixed(1));
+      const resFormatado = imc.toFixed(1);
+      let status = '';
 
-      if (imc < 18.5) setImcStatus('Abaixo do peso');
-      else if (imc < 25) setImcStatus('Peso normal');
-      else if (imc < 30) setImcStatus('Sobrepeso');
-      else setImcStatus('Obesidade');
+      if (imc < 18.5) status = 'Abaixo do peso';
+      else if (imc < 25) status = 'Peso normal';
+      else if (imc < 30) status = 'Sobrepeso';
+      else status = 'Obesidade';
+
+      setImcResultado(resFormatado);
+      setImcStatus(status);
+
+      try {
+        localStorage.setItem('@omegaGym:calcIMC', JSON.stringify({ peso, altura, resultado: resFormatado, status }));
+      } catch {}
     }
   };
-  //Função do cronometro
+
+  // Função do cronometro
   const iniciarCronometro = () => {
     setTempoRestante(10);
     setCronometroRodando(true);
@@ -66,7 +117,7 @@ export default function AcademiaHome() {
     }, 1000);
   };
 
-  //Função para calcular o FCM
+  // Função para calcular o FCM
   const calcularFCM = (e: React.FormEvent) => {
     e.preventDefault();
     const numIdade = parseInt(idadeFcm);
@@ -75,9 +126,12 @@ export default function AcademiaHome() {
       // Fórmula de Tanaka (mais precisa)
       const resultado = Math.round(208 - (0.7 * numIdade));
       setFcmResultado(resultado);
+
+      try {
+        localStorage.setItem('@omegaGym:calcFCM', JSON.stringify({ idade: idadeFcm, resultado }));
+      } catch {}
     }
   };
-
 
   // Função para calcular o BPM
   const calcularBpmManual = (e: React.FormEvent) => {
@@ -87,16 +141,23 @@ export default function AcademiaHome() {
     if (contagem > 0) {
       const bpmCalculado = contagem * 6;
       setBpmResultado(bpmCalculado);
+      let zona = '';
 
       if (bpmCalculado < 60) {
-        setZonaAlvo('Bradicardia / Ritmo de Atleta (Baixo)');
+        zona = 'Bradicardia / Ritmo de Atleta (Baixo)';
       } else if (bpmCalculado <= 100) {
-        setZonaAlvo('Coração Regular / Repouso Normal');
+        zona = 'Coração Regular / Repouso Normal';
       } else if (bpmCalculado <= 140) {
-        setZonaAlvo('Ritmo Elevado (Cardio Leve / Aquecimento)');
+        zona = 'Ritmo Elevado (Cardio Leve / Aquecimento)';
       } else {
-        setZonaAlvo('Ritmo de Alta Intensidade / Esforço Máximo');
+        zona = 'Ritmo de Alta Intensidade / Esforço Máximo';
       }
+
+      setZonaAlvo(zona);
+
+      try {
+        localStorage.setItem('@omegaGym:calcBPM', JSON.stringify({ batimentos: batimentos10s, resultado: bpmCalculado, zona }));
+      } catch {}
     }
   };
 
@@ -127,7 +188,7 @@ export default function AcademiaHome() {
           {/* Botões de Acesso Rápido e as 3 Listras */}
           <div className="flex items-center gap-4">
             <div className="flex gap-2">
-              {!isLoggedIn ? (
+              {!isLoggedIn && (
                 <>
                   <Link href="/login" className="border border-blue-500 text-blue-500 font-semibold text-xs px-3 py-1.5 rounded-full hover:bg-blue-500/10 transition">
                     Entrar
@@ -136,10 +197,6 @@ export default function AcademiaHome() {
                     Cadastrar
                   </Link>
                 </>
-              ) : (
-                <Link href="/perfil" className="bg-blue-500 text-white font-semibold text-xs px-3 py-1.5 rounded-full hover:bg-blue-600 transition tracking-wide uppercase">
-                  Área do Aluno ➡️
-                </Link>
               )}
             </div>
 

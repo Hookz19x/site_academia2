@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "app/cadastro/login", "app/cadastro/page.tsx"  ],
+  ],
   "exclude": ["node_modules"]
 }

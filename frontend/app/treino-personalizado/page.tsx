@@ -36,16 +36,25 @@ const criarDiasPadrao = (): DiaSemana[] => [
 export default function TreinoPersonalizadoPage() {
   const [fichas, setFichas] = useState<FichaTreino[]>([]);
   const [treinoAbertoId, setTreinoAbertoId] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [erro, setErro] = useState('');
 
   useEffect(() => {
     apiFetch<{ workouts: FichaTreino[] }>('/api/workouts')
-      .then(({ workouts }) => setFichas(workouts))
+      .then(({ workouts }) => {
+        setFichas(workouts);
+        if (workouts.length > 0 && !treinoAbertoId) {
+          setTreinoAbertoId(workouts[0].id);
+        }
+      })
       .catch((error) => setErro(error instanceof Error ? error.message : 'Não foi possível carregar os treinos.'));
   }, []);
 
   const salvarFichas = async () => {
+    setSalvando(true);
+    setErro('');
+
     // Garante que todos os exercícios fiquem salvos e fora do modo edição
     const fichasSalvas = fichas.map((f) => ({
       ...f,
@@ -60,7 +69,11 @@ export default function TreinoPersonalizadoPage() {
       await Promise.all(fichasSalvas.map((ficha) => apiFetch(`/api/workouts/${ficha.id}`, { method: 'PUT', body: JSON.stringify({ nome: ficha.nome, dias: ficha.dias }) })));
       setSalvo(true);
       setTimeout(() => setSalvo(false), 3000);
-    } catch (error) { setErro(error instanceof Error ? error.message : 'Não foi possível salvar os treinos.'); }
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : 'Não foi possível salvar os treinos.');
+    } finally {
+      setSalvando(false);
+    }
   };
 
   const adicionarNovoTreino = async () => {
@@ -408,9 +421,10 @@ export default function TreinoPersonalizadoPage() {
 
             <button
               onClick={salvarFichas}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-black text-xs py-3.5 rounded-xl uppercase tracking-wider shadow-lg active:scale-95 transition"
+              disabled={salvando}
+              className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-black text-xs py-3.5 rounded-xl uppercase tracking-wider shadow-lg active:scale-95 transition"
             >
-              💾 Salvar Todos os Treinos
+              {salvando ? 'Salvando no Banco...' : '💾 Salvar Todos os Treinos'}
             </button>
           </div>
         )}

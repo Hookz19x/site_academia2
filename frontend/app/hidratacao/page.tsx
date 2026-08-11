@@ -8,19 +8,43 @@ export default function HidratacaoPage() {
   const totalCopos = 12; // 12 copos de 250mL = 3000mL (3L)
   const mlsPorCopo = 250;
 
-  // Função para adicionar ou remover copos clicando direto neles
+  const getTodayKey = () => {
+    const today = new Date();
+    return `@omegaGym:agua_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  };
+
+  // Carrega os copos salvos no dia atual
+  useEffect(() => {
+    try {
+      const salvo = localStorage.getItem(getTodayKey());
+      if (salvo !== null) {
+        setCoposTomados(parseInt(salvo, 10) || 0);
+      }
+    } catch {
+      // Ignora erro de localStorage
+    }
+  }, []);
+
+  // Salva no localStorage sempre que houver alteração
+  const atualizarCopos = (novoValor: number) => {
+    setCoposTomados(novoValor);
+    try {
+      localStorage.setItem(getTodayKey(), String(novoValor));
+    } catch {
+      // Ignora erro de localStorage
+    }
+  };
+
   const alternarCopo = (index: number) => {
     if (index < coposTomados) {
-      // Se clicar em um copo já preenchido, reduz o contador até aquele ponto
-      setCoposTomados(index);
+      atualizarCopos(index);
     } else {
-      // Preenche até o copo clicado
-      setCoposTomados(index + 1);
+      atualizarCopos(index + 1);
     }
   };
 
   const resetarProgresso = () => {
-    setCoposTomados(0);
+    atualizarCopos(0);
   };
 
   const totalML = coposTomados * mlsPorCopo;
@@ -69,7 +93,7 @@ export default function HidratacaoPage() {
         {/* Grade Interativa com os 12 Copos */}
         <div className="space-y-3">
           <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center">
-            Clique nos copos para registrar
+            Clique nos copos para registrar (Salvo automaticamente)
           </label>
           
           <div className="grid grid-cols-4 gap-3 bg-zinc-950 border border-zinc-800 p-4 rounded-2xl">
