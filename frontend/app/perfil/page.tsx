@@ -4,7 +4,15 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiFetch, encerrarSessao, type Usuario } from '../../lib/api';
 
-const formatarData = (data: string) => data ? new Intl.DateTimeFormat('pt-BR').format(new Date(`${data}T12:00:00`)) : '--/--/----';
+const formatarData = (data: string) => {
+  if (!data) return '--/--/----';
+  try {
+    const d = new Date(data.includes('T') ? data : `${data}T12:00:00`);
+    return isNaN(d.getTime()) ? '--/--/----' : new Intl.DateTimeFormat('pt-BR').format(d);
+  } catch {
+    return '--/--/----';
+  }
+};
 
 export default function PerfilPage() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
