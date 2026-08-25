@@ -1,0 +1,12 @@
+{
+  "name": "omega-gym",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "db:init": "npm --prefix backend run db:init",
+    "db:reset": "npm --prefix backend run db:reset",
+    "db:delete-user": "npm --prefix backend run db:delete-user --"
+  }
+}

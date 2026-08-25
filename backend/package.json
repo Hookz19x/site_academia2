@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "db:init": "node src/database/init.js"
+    "db:init": "node src/database/init.js",
+    "db:reset": "node src/database/reset.js",
+    "db:delete-user": "node src/database/delete-user.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -56,7 +56,7 @@ export default function Cadastro() {
       <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded-2xl space-y-6">
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-black uppercase tracking-tight">
-            OMEGA <span className="text-blue-500">GYM</span>
+            ÔMEGA <span className="text-blue-500">GYM</span>
           </h2>
           <p className="text-sm text-gray-400">Crie sua conta e comece hoje</p>
         </div>

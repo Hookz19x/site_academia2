@@ -143,7 +143,7 @@ export default function PerfilPage() {
       </main>
 
       <footer className="border-t border-zinc-900 py-4 text-center text-[10px] text-gray-600">
-        OMEGA GYM • Área do Aluno
+        ÔMEGA GYM • Área do Aluno
       </footer>
     </div>
   );

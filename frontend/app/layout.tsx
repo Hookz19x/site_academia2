@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OMEGA GYM",
-  description: "Sistema de treino e acompanhamento da OMEGA GYM",
+  title: "ÔMEGA GYM",
+  description: "Sistema de treino e acompanhamento da ÔMEGA GYM",
 };
 
 export default function RootLayout({

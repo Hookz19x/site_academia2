@@ -14,7 +14,13 @@ if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
   throw new Error('Defina DATABASE_URL e JWT_SECRET no arquivo .env.');
 }
 
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.options('*', cors());
 app.use(express.json({ limit: '1mb' }));
 
 const createToken = (id) => jwt.sign({}, process.env.JWT_SECRET, { subject: id, expiresIn: '7d' });
@@ -125,4 +131,4 @@ app.use((error, _req, res, _next) => {
   res.status(500).json({ message: 'Erro interno do servidor.' });
 });
 
-app.listen(port, () => console.log(`API da OMEGA GYM em http://localhost:${port}`));
+app.listen(port, '0.0.0.0', () => console.log(`API da ÔMEGA GYM em http://0.0.0.0:${port}`));

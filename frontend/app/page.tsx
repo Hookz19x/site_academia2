@@ -173,14 +173,14 @@ export default function AcademiaHome() {
             {/* Aqui entra a sua logo importada da pasta public */}
             <Image
               src="/logo.jpeg"
-              alt="Logo OMEGA GYM"
+              alt="Logo ÔMEGA GYM"
               width={40} // Ajuste a largura como quiser
               height={40} // Ajuste a altura como quiser
               className="object-contain"
             />
 
             {/* Nome da academia do lado da logo */}
-            <h2 className="text-2xl font-black uppercase tracking-tight">OMEGA<span className="text-blue-500">GYM</span>
+            <h2 className="text-2xl font-black uppercase tracking-tight">ÔMEGA<span className="text-blue-500">GYM</span>
 
             </h2>
           </div>
@@ -202,33 +202,61 @@ export default function AcademiaHome() {
 
             {/* Botão das 3 Listras */}
             <button
+              type="button"
+              aria-label="Abrir Menu"
               onClick={() => setMenuAberto(!menuAberto)}
-              className="text-white hover:text-blue-500 transition focus:outline-none"
+              className="p-2 text-white hover:text-blue-500 transition focus:outline-none cursor-pointer"
             >
-              <div className="space-y-1.5">
-                <span className={`block h-0.5 w-6 bg-white transition-transform ${menuAberto ? 'rotate-45 translate-y-2' : ''}`}></span>
-                <span className={`block h-0.5 w-6 bg-white transition-opacity ${menuAberto ? 'opacity-0' : ''}`}></span>
-                <span className={`block h-0.5 w-6 bg-white transition-transform ${menuAberto ? '-rotate-45 -translate-y-2' : ''}`}></span>
+              <div className="space-y-1.5 w-6">
+                <span className={`block h-0.5 w-6 bg-white transition-all ${menuAberto ? 'rotate-45 translate-y-2' : ''}`}></span>
+                <span className={`block h-0.5 w-6 bg-white transition-all ${menuAberto ? 'opacity-0' : ''}`}></span>
+                <span className={`block h-0.5 w-6 bg-white transition-all ${menuAberto ? '-rotate-45 -translate-y-2' : ''}`}></span>
               </div>
             </button>
           </div>
         </div>
       </header>
 
-      {/* MENU LATERAL RETRÁTIL (HAMBÚRGUER) */}
-      <div className={`fixed top-[69px] right-0 h-full w-64 bg-zinc-800 border-2 border-black-500/20 z-40 transform transition-transform duration-300 ${menuAberto ? 'translate-x-0' : 'translate-x-full'}`}>
-        <nav className="flex flex-col p-6 space-y-6 text-sm font-bold uppercase tracking-wider">
-          <Link href="/perfil" onClick={() => setMenuAberto(false)} className="text-white hover:text-blue-500 transition">
+      {/* OVERLAY & MENU LATERAL RETRÁTIL (HAMBÚRGUER) */}
+      {menuAberto && (
+        <div
+          onClick={() => setMenuAberto(false)}
+          className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm transition-opacity"
+        />
+      )}
+      <div
+        className={`fixed top-0 right-0 h-full w-72 bg-zinc-900 border-l border-zinc-800 z-50 transform transition-transform duration-300 flex flex-col ${
+          menuAberto ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+          <span className="font-black text-sm uppercase text-blue-500 tracking-wider">
+            Menu ÔMEGA GYM
+          </span>
+          <button
+            type="button"
+            onClick={() => setMenuAberto(false)}
+            className="text-gray-400 hover:text-white p-2 text-xl font-bold cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+        <nav className="flex flex-col p-6 space-y-5 text-sm font-bold uppercase tracking-wider">
+          <Link href="/perfil" onClick={() => setMenuAberto(false)} className="text-white hover:text-blue-500 transition py-1">
             Meu Perfil
           </Link>
-          <Link href="/treinos" onClick={() => setMenuAberto(false)} className="text-white hover:text-blue-500 transition">
+          <Link href="/treinos" onClick={() => setMenuAberto(false)} className="text-white hover:text-blue-500 transition py-1">
             Treinos
           </Link>
-          <Link href="/treino-personalizado" onClick={() => setMenuAberto(false)} className="text-white hover:text-blue-500 transition">Treino Personalizado</Link>
-          <Link href="/hidratacao" onClick={() => setMenuAberto(false)} className="text-white hover:text-blue-500 transition">Hidrate-se</Link>
-          <a href="#imc" onClick={() => setMenuAberto(false)} className="text-white hover:text-blue-500 transition">Cálculo de IMC</a>
-
-
+          <Link href="/treino-personalizado" onClick={() => setMenuAberto(false)} className="text-white hover:text-blue-500 transition py-1">
+            Treino Personalizado
+          </Link>
+          <Link href="/hidratacao" onClick={() => setMenuAberto(false)} className="text-white hover:text-blue-500 transition py-1">
+            Hidrate-se
+          </Link>
+          <a href="#imc" onClick={() => setMenuAberto(false)} className="text-white hover:text-blue-500 transition py-1">
+            Cálculo de IMC
+          </a>
         </nav>
       </div>
 
@@ -492,7 +520,7 @@ export default function AcademiaHome() {
       {/* 7. RODAPÉ */}
       <footer className="bg-zinc-950 border-t border-blue-500/20 py-8 px-6 mt-12 text-center space-y-6">
         <div>
-          <h2 className="text-md font-black uppercase tracking-tight text-white">OMEGA GYM</h2>
+          <h2 className="text-md font-black uppercase tracking-tight text-white">ÔMEGA GYM</h2>
           <p className="text-[11px] text-gray-500 mt-1 max-w-xs mx-auto">Mais que uma academia. Um lugar para você se tornar sua melhor versão.</p>
         </div>
 
@@ -503,7 +531,7 @@ export default function AcademiaHome() {
         </div>
 
         <div className="border-t border-zinc-900 pt-4 text-[9px] text-gray-600">
-          © {new Date().getFullYear()} OMEGA GYM. Todos os direitos reservados.
+          © {new Date().getFullYear()} ÔMEGA GYM. Todos os direitos reservados.
         </div>
       </footer>
 

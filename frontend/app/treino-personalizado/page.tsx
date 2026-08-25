@@ -9,7 +9,7 @@ interface Exercicio {
   nome: string;
   series: string;
   repeticoes: string;
-  editando?: boolean; // Controla se o exercício está em modo edição ou visualização
+  editando?: boolean;
 }
 
 interface DiaSemana {
@@ -24,6 +24,8 @@ interface FichaTreino {
   nome: string;
   dias: DiaSemana[];
 }
+
+const LOCAL_KEY = '@omegaGym:fichasPersonalizadas';
 
 const criarDiasPadrao = (): DiaSemana[] => [
   { id: 'seg', dia: 'Segunda-feira', foco: '', exercicios: [] },
@@ -41,21 +43,44 @@ export default function TreinoPersonalizadoPage() {
   const [erro, setErro] = useState('');
 
   useEffect(() => {
-    apiFetch<{ workouts: FichaTreino[] }>('/api/workouts')
-      .then(({ workouts }) => {
-        setFichas(workouts);
-        if (workouts.length > 0 && !treinoAbertoId) {
-          setTreinoAbertoId(workouts[0].id);
+    // 1. Tenta carregar do localStorage como fallback imediato
+    try {
+      const local = localStorage.getItem(LOCAL_KEY);
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setFichas(parsed);
+          setTreinoAbertoId(parsed[0].id);
         }
-      })
-      .catch((error) => setErro(error instanceof Error ? error.message : 'Não foi possível carregar os treinos.'));
+      }
+    } catch {}
+
+    // 2. Se houver usuário autenticado, carrega da API do backend
+    const token = typeof window !== 'undefined' ? localStorage.getItem('@omegaGym:token') : null;
+    if (token) {
+      apiFetch<{ workouts: FichaTreino[] }>('/api/workouts')
+        .then(({ workouts }) => {
+          if (workouts && Array.isArray(workouts) && workouts.length > 0) {
+            setFichas(workouts);
+            setTreinoAbertoId(workouts[0].id);
+            try { localStorage.setItem(LOCAL_KEY, JSON.stringify(workouts)); } catch {}
+          }
+        })
+        .catch(() => {
+          // Mantém o estado local se a requisição falhar
+        });
+    }
   }, []);
+
+  const salvarLocal = (novasFichas: FichaTreino[]) => {
+    setFichas(novasFichas);
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify(novasFichas)); } catch {}
+  };
 
   const salvarFichas = async () => {
     setSalvando(true);
     setErro('');
 
-    // Garante que todos os exercícios fiquem salvos e fora do modo edição
     const fichasSalvas = fichas.map((f) => ({
       ...f,
       dias: f.dias.map((d) => ({
@@ -64,52 +89,86 @@ export default function TreinoPersonalizadoPage() {
       })),
     }));
 
-    setFichas(fichasSalvas);
-    try {
-      await Promise.all(fichasSalvas.map((ficha) => apiFetch(`/api/workouts/${ficha.id}`, { method: 'PUT', body: JSON.stringify({ nome: ficha.nome, dias: ficha.dias }) })));
-      setSalvo(true);
-      setTimeout(() => setSalvo(false), 3000);
-    } catch (error) {
-      setErro(error instanceof Error ? error.message : 'Não foi possível salvar os treinos.');
-    } finally {
-      setSalvando(false);
+    salvarLocal(fichasSalvas);
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('@omegaGym:token') : null;
+    if (token) {
+      try {
+        await Promise.all(
+          fichasSalvas.map(async (ficha) => {
+            if (ficha.id.startsWith('temp-')) {
+              const { workout } = await apiFetch<{ workout: FichaTreino }>('/api/workouts', {
+                method: 'POST',
+                body: JSON.stringify({ nome: ficha.nome, dias: ficha.dias }),
+              });
+              ficha.id = workout.id;
+            } else {
+              await apiFetch(`/api/workouts/${ficha.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ nome: ficha.nome, dias: ficha.dias }),
+              });
+            }
+          })
+        );
+      } catch (error) {
+        // Se a API der erro, mantém salvo localmente
+      }
     }
+
+    setSalvo(true);
+    setTimeout(() => setSalvo(false), 3000);
+    setSalvando(false);
   };
 
   const adicionarNovoTreino = async () => {
-    const treinoBase = {
+    const idTemp = `temp-${Date.now()}`;
+    const novoTreino: FichaTreino = {
+      id: idTemp,
       nome: `Treino ${fichas.length + 1}`,
       dias: criarDiasPadrao(),
     };
-    try {
-      const { workout } = await apiFetch<{ workout: FichaTreino }>('/api/workouts', { method: 'POST', body: JSON.stringify(treinoBase) });
-      setFichas([...fichas, workout]);
-      setTreinoAbertoId(workout.id);
-    } catch (error) { setErro(error instanceof Error ? error.message : 'Não foi possível criar o treino.'); }
+
+    const novaLista = [...fichas, novoTreino];
+    salvarLocal(novaLista);
+    setTreinoAbertoId(idTemp);
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('@omegaGym:token') : null;
+    if (token) {
+      try {
+        const { workout } = await apiFetch<{ workout: FichaTreino }>('/api/workouts', {
+          method: 'POST',
+          body: JSON.stringify({ nome: novoTreino.nome, dias: novoTreino.dias }),
+        });
+        const listaAtualizada = novaLista.map((f) => (f.id === idTemp ? workout : f));
+        salvarLocal(listaAtualizada);
+        setTreinoAbertoId(workout.id);
+      } catch {}
+    }
   };
 
   const deletarTreino = async (idTreino: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      await apiFetch(`/api/workouts/${idTreino}`, { method: 'DELETE' });
-      setFichas(fichas.filter((f) => f.id !== idTreino));
-      if (treinoAbertoId === idTreino) setTreinoAbertoId(null);
-    } catch (error) { setErro(error instanceof Error ? error.message : 'Não foi possível excluir o treino.'); }
+    const novaLista = fichas.filter((f) => f.id !== idTreino);
+    salvarLocal(novaLista);
+    if (treinoAbertoId === idTreino) setTreinoAbertoId(novaLista[0]?.id || null);
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('@omegaGym:token') : null;
+    if (token && !idTreino.startsWith('temp-')) {
+      try {
+        await apiFetch(`/api/workouts/${idTreino}`, { method: 'DELETE' });
+      } catch {}
+    }
   };
 
   const atualizarNomeTreino = (idTreino: string, novoNome: string) => {
-    setFichas(
-      fichas.map((f) => (f.id === idTreino ? { ...f, nome: novoNome } : f))
-    );
+    salvarLocal(fichas.map((f) => (f.id === idTreino ? { ...f, nome: novoNome } : f)));
   };
 
   const atualizarFocoDia = (idTreino: string, idDia: string, novoFoco: string) => {
-    setFichas(
+    salvarLocal(
       fichas.map((f) => {
         if (f.id === idTreino) {
-          const diasAt = f.dias.map((d) =>
-            d.id === idDia ? { ...d, foco: novoFoco } : d
-          );
+          const diasAt = f.dias.map((d) => (d.id === idDia ? { ...d, foco: novoFoco } : d));
           return { ...f, dias: diasAt };
         }
         return f;
@@ -118,7 +177,7 @@ export default function TreinoPersonalizadoPage() {
   };
 
   const adicionarExercicio = (idTreino: string, idDia: string) => {
-    setFichas(
+    salvarLocal(
       fichas.map((f) => {
         if (f.id === idTreino) {
           const diasAt = f.dias.map((d) => {
@@ -128,7 +187,7 @@ export default function TreinoPersonalizadoPage() {
                 nome: '',
                 series: '3',
                 repeticoes: '12',
-                editando: true, // Já abre em modo de edição
+                editando: true,
               };
               return { ...d, exercicios: [...d.exercicios, novoEx] };
             }
@@ -142,14 +201,12 @@ export default function TreinoPersonalizadoPage() {
   };
 
   const alternarEdicaoExercicio = (idTreino: string, idDia: string, idExercicio: string) => {
-    setFichas(
+    salvarLocal(
       fichas.map((f) => {
         if (f.id === idTreino) {
           const diasAt = f.dias.map((d) => {
             if (d.id === idDia) {
-              const exAt = d.exercicios.map((e) =>
-                e.id === idExercicio ? { ...e, editando: !e.editando } : e
-              );
+              const exAt = d.exercicios.map((e) => (e.id === idExercicio ? { ...e, editando: !e.editando } : e));
               return { ...d, exercicios: exAt };
             }
             return d;
@@ -162,15 +219,12 @@ export default function TreinoPersonalizadoPage() {
   };
 
   const deletarExercicio = (idTreino: string, idDia: string, idExercicio: string) => {
-    setFichas(
+    salvarLocal(
       fichas.map((f) => {
         if (f.id === idTreino) {
           const diasAt = f.dias.map((d) => {
             if (d.id === idDia) {
-              return {
-                ...d,
-                exercicios: d.exercicios.filter((e) => e.id !== idExercicio),
-              };
+              return { ...d, exercicios: d.exercicios.filter((e) => e.id !== idExercicio) };
             }
             return d;
           });
@@ -188,14 +242,12 @@ export default function TreinoPersonalizadoPage() {
     campo: keyof Exercicio,
     valor: string
   ) => {
-    setFichas(
+    salvarLocal(
       fichas.map((f) => {
         if (f.id === idTreino) {
           const diasAt = f.dias.map((d) => {
             if (d.id === idDia) {
-              const exAt = d.exercicios.map((e) =>
-                e.id === idExercicio ? { ...e, [campo]: valor } : e
-              );
+              const exAt = d.exercicios.map((e) => (e.id === idExercicio ? { ...e, [campo]: valor } : e));
               return { ...d, exercicios: exAt };
             }
             return d;
@@ -231,8 +283,9 @@ export default function TreinoPersonalizadoPage() {
           </div>
 
           <button
+            type="button"
             onClick={adicionarNovoTreino}
-            className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider py-2 px-3 rounded-lg transition active:scale-95"
+            className="bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold uppercase tracking-wider py-2.5 px-4 rounded-xl transition shadow-md cursor-pointer"
           >
             + Criar Treino
           </button>
@@ -251,10 +304,11 @@ export default function TreinoPersonalizadoPage() {
           <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-8 text-center space-y-3">
             <p className="text-gray-400 text-xs">Nenhum treino criado ainda.</p>
             <button
+              type="button"
               onClick={adicionarNovoTreino}
-              className="bg-blue-500/10 border border-blue-500/40 text-blue-400 hover:bg-blue-500/20 text-xs font-bold uppercase tracking-wider py-2 px-4 rounded-lg transition"
+              className="bg-blue-500/10 border border-blue-500/40 text-blue-400 hover:bg-blue-500/20 text-xs font-bold uppercase tracking-wider py-2.5 px-5 rounded-xl transition cursor-pointer"
             >
-              Criar Treino 1
+              + Criar Treino 1
             </button>
           </div>
         ) : (
@@ -263,12 +317,11 @@ export default function TreinoPersonalizadoPage() {
               const estaAberto = treinoAbertoId === ficha.id;
 
               return (
-                <div key={ficha.id} className="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden">
-                  
+                <div key={ficha.id} className="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
                   {/* CABEÇALHO DA FICHA */}
                   <div
                     onClick={() => setTreinoAbertoId(estaAberto ? null : ficha.id)}
-                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-zinc-900/50 transition border-b border-zinc-900"
+                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-zinc-900/50 transition border-b border-zinc-900 select-none"
                   >
                     <input
                       type="text"
@@ -281,8 +334,9 @@ export default function TreinoPersonalizadoPage() {
 
                     <div className="flex items-center gap-3">
                       <button
+                        type="button"
                         onClick={(e) => deletarTreino(ficha.id, e)}
-                        className="text-gray-500 hover:text-red-400 text-xs p-1"
+                        className="text-gray-500 hover:text-red-400 text-sm p-1.5 cursor-pointer transition"
                         title="Deletar Treino"
                       >
                         🗑️
@@ -296,7 +350,6 @@ export default function TreinoPersonalizadoPage() {
                     <div className="p-4 space-y-5 bg-black/40">
                       {ficha.dias.map((d) => (
                         <div key={d.id} className="bg-zinc-900/80 border border-zinc-800/80 rounded-lg p-3 space-y-3">
-                          
                           {/* DIA DA SEMANA E FOCO */}
                           <div className="border-b border-zinc-800 pb-2 space-y-1">
                             <span className="text-[11px] font-black uppercase text-blue-400 block">
@@ -358,14 +411,16 @@ export default function TreinoPersonalizadoPage() {
 
                                         <div className="flex items-center gap-2">
                                           <button
+                                            type="button"
                                             onClick={() => alternarEdicaoExercicio(ficha.id, d.id, ex.id)}
-                                            className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold uppercase py-1 px-3 rounded transition"
+                                            className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold uppercase py-1 px-3 rounded transition cursor-pointer"
                                           >
                                             OK
                                           </button>
                                           <button
+                                            type="button"
                                             onClick={() => deletarExercicio(ficha.id, d.id, ex.id)}
-                                            className="text-gray-500 hover:text-red-400 text-xs p-1"
+                                            className="text-gray-500 hover:text-red-400 text-xs p-1 cursor-pointer transition"
                                           >
                                             ✕
                                           </button>
@@ -384,15 +439,17 @@ export default function TreinoPersonalizadoPage() {
 
                                       <div className="flex items-center gap-2">
                                         <button
+                                          type="button"
                                           onClick={() => alternarEdicaoExercicio(ficha.id, d.id, ex.id)}
-                                          className="text-gray-400 hover:text-blue-400 text-xs p-1"
+                                          className="text-gray-400 hover:text-blue-400 text-xs p-1 cursor-pointer transition"
                                           title="Editar Exercício"
                                         >
                                           ✏️
                                         </button>
                                         <button
+                                          type="button"
                                           onClick={() => deletarExercicio(ficha.id, d.id, ex.id)}
-                                          className="text-gray-500 hover:text-red-400 text-xs p-1"
+                                          className="text-gray-500 hover:text-red-400 text-xs p-1 cursor-pointer transition"
                                           title="Excluir Exercício"
                                         >
                                           ✕
@@ -406,8 +463,9 @@ export default function TreinoPersonalizadoPage() {
                           </div>
 
                           <button
+                            type="button"
                             onClick={() => adicionarExercicio(ficha.id, d.id)}
-                            className="w-full bg-zinc-950 hover:bg-black border border-zinc-800 text-blue-400 text-[10px] font-bold py-1.5 rounded transition uppercase"
+                            className="w-full bg-zinc-950 hover:bg-black border border-zinc-800 text-blue-400 text-[10px] font-bold py-2 rounded transition uppercase cursor-pointer"
                           >
                             + Exercício
                           </button>
@@ -420,9 +478,10 @@ export default function TreinoPersonalizadoPage() {
             })}
 
             <button
+              type="button"
               onClick={salvarFichas}
               disabled={salvando}
-              className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-black text-xs py-3.5 rounded-xl uppercase tracking-wider shadow-lg active:scale-95 transition"
+              className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-black text-xs py-3.5 rounded-xl uppercase tracking-wider shadow-lg active:scale-95 transition cursor-pointer"
             >
               {salvando ? 'Salvando no Banco...' : '💾 Salvar Todos os Treinos'}
             </button>
@@ -432,7 +491,7 @@ export default function TreinoPersonalizadoPage() {
 
       {/* FOOTER */}
       <footer className="border-t border-zinc-900 py-4 text-center text-[10px] text-gray-600">
-        OMEGA GYM • Rotina Personalizada
+        ÔMEGA GYM • Rotina Personalizada
       </footer>
     </div>
   );

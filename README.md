@@ -1,4 +1,4 @@
-# OMEGA GYM
+# ÔMEGA GYM
 
 Sistema web para alunos de academia, com frontend em Next.js e API Node.js conectada ao PostgreSQL. Ele permite criar conta, entrar, consultar o perfil e criar fichas de treino personalizadas.
 

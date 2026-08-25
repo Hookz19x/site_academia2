@@ -116,7 +116,7 @@ export default function TreinosPage() {
         <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex justify-between items-center">
           <div>
             <h2 className="text-sm font-bold text-white">
-              {usuario ? usuario.nome : 'Aluno OMEGA GYM'}
+              {usuario ? usuario.nome : 'Aluno ÔMEGA GYM'}
             </h2>
             <p className="text-[11px] text-gray-400">
               {usuario ? `Matrícula: ${usuario.matricula} • ${usuario.plano}` : 'Objetivo: Hipertrofia Geral'}
@@ -179,7 +179,7 @@ export default function TreinosPage() {
 
       {/* RODAPÉ SIMPLIFICADO */}
       <footer className="border-t border-zinc-900 py-6 text-center text-[10px] text-gray-600">
-        © {new Date().getFullYear()} OMEGA GYM. Bons treinos!
+        © {new Date().getFullYear()} ÔMEGA GYM. Bons treinos!
       </footer>
 
     </div>

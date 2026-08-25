@@ -1,4 +1,4 @@
-# API OMEGA GYM
+# API ÔMEGA GYM
 
 Para instalar o sistema completo em outro computador, consulte o [README principal](../README.md).
 
