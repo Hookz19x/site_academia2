@@ -3,6 +3,8 @@ export function publicUser(user) {
     id: user.id,
     nome: user.name,
     email: user.email,
+    role: user.role || 'aluno',
+    cref: user.cref || null,
     matricula: user.membership_code,
     plano: user.plan_name,
     status: user.plan_status,

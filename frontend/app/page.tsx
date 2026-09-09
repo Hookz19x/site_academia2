@@ -9,6 +9,7 @@ export default function AcademiaHome() {
 
   // Estados de Autenticação
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
 
   // Estados para o cálculo do BPM
   const [batimentos10s, setBatimentos10s] = useState('');
@@ -67,6 +68,7 @@ export default function AcademiaHome() {
     if (token) {
       apiFetch<{ user: Usuario }>('/api/me')
         .then(({ user }) => {
+          setUsuario(user);
           if (user.peso && !peso) setPeso(String(user.peso));
           if (user.altura && !altura) setAltura(String(user.altura));
           if (user.idade && !idadeFcm) setIdadeFcm(String(user.idade));
@@ -187,8 +189,8 @@ export default function AcademiaHome() {
 
           {/* Botões de Acesso Rápido e as 3 Listras */}
           <div className="flex items-center gap-4">
-            <div className="flex gap-2">
-              {!isLoggedIn && (
+            <div className="flex gap-2 items-center">
+              {!isLoggedIn ? (
                 <>
                   <Link href="/login" className="border border-blue-500 text-blue-500 font-semibold text-xs px-3 py-1.5 rounded-full hover:bg-blue-500/10 transition">
                     Entrar
@@ -197,6 +199,20 @@ export default function AcademiaHome() {
                     Cadastrar
                   </Link>
                 </>
+              ) : (
+                <Link
+                  href="/perfil"
+                  className={`border text-xs font-bold px-3 py-1.5 rounded-full transition flex items-center gap-1.5 ${
+                    usuario?.role === 'admin'
+                      ? 'border-purple-500 text-purple-400 hover:bg-purple-500/10'
+                      : usuario?.role === 'personal'
+                      ? 'border-amber-500 text-amber-400 hover:bg-amber-500/10'
+                      : 'border-blue-500 text-blue-400 hover:bg-blue-500/10'
+                  }`}
+                >
+                  <span>{usuario?.role === 'admin' ? '🛡️' : usuario?.role === 'personal' ? '🏋️' : '👤'}</span>
+                  <span className="hidden sm:inline">{usuario?.nome?.split(' ')[0] || 'Meu Perfil'}</span>
+                </Link>
               )}
             </div>
 
@@ -229,10 +245,23 @@ export default function AcademiaHome() {
           menuAberto ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between p-5 border-b border-zinc-800">
-          <span className="font-black text-sm uppercase text-blue-500 tracking-wider">
-            Menu ÔMEGA GYM
-          </span>
+        <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
+          <div>
+            <span className="font-black text-xs uppercase text-blue-500 tracking-wider block">
+              Menu ÔMEGA GYM
+            </span>
+            {usuario && (
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border mt-1 inline-block ${
+                usuario.role === 'admin'
+                  ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
+                  : usuario.role === 'personal'
+                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                  : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+              }`}>
+                {usuario.role === 'admin' ? '🛡️ Administrador' : usuario.role === 'personal' ? '🏋️ Personal' : '🎓 Aluno'}
+              </span>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => setMenuAberto(false)}

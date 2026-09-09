@@ -6,7 +6,9 @@
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "db:init": "npm --prefix backend run db:init",
+    "db:migrate": "npm --prefix backend run db:migrate",
     "db:reset": "npm --prefix backend run db:reset",
-    "db:delete-user": "npm --prefix backend run db:delete-user --"
+    "db:delete-user": "npm --prefix backend run db:delete-user --",
+    "db:create-admin": "npm --prefix backend run db:create-admin --"
   }
 }

@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(120) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
+  role VARCHAR(20) NOT NULL DEFAULT 'aluno' CHECK (role IN ('aluno', 'personal', 'admin')),
+  cref VARCHAR(30),
   age SMALLINT,
   weight_kg NUMERIC(5,2),
   height_m NUMERIC(3,2),
