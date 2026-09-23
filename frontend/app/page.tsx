@@ -9,6 +9,7 @@ export default function AcademiaHome() {
 
   // Estados de Autenticação
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
   const [usuario, setUsuario] = useState<Usuario | null>(null);
 
   // Estados para o cálculo do BPM
@@ -64,16 +65,26 @@ export default function AcademiaHome() {
       // Ignora erro
     }
 
-    // Se estiver logado, puxa os dados biométricos do perfil se ainda não informados
+    // Se estiver logado, valida o token via /api/me
     if (token) {
       apiFetch<{ user: Usuario }>('/api/me')
         .then(({ user }) => {
           setUsuario(user);
-          if (user.peso && !peso) setPeso(String(user.peso));
-          if (user.altura && !altura) setAltura(String(user.altura));
-          if (user.idade && !idadeFcm) setIdadeFcm(String(user.idade));
+          // O estado dentro do setup inicial pode exigir update via setter functional se os inputs tiverem mudado muito rapido, mas funciona.
+          if (user.peso) setPeso(String(user.peso));
+          if (user.altura) setAltura(String(user.altura));
+          if (user.idade) setIdadeFcm(String(user.idade));
+          setIsChecking(false);
         })
-        .catch(() => {});
+        .catch(() => {
+          // Token invalido (o usuario foi deletado, por exemplo).
+          localStorage.removeItem('@omegaGym:token');
+          setIsLoggedIn(false);
+          setUsuario(null);
+          setIsChecking(false);
+        });
+    } else {
+      setIsChecking(false);
     }
   }, []);
 
@@ -98,7 +109,7 @@ export default function AcademiaHome() {
 
       try {
         localStorage.setItem('@omegaGym:calcIMC', JSON.stringify({ peso, altura, resultado: resFormatado, status }));
-      } catch {}
+      } catch { }
     }
   };
 
@@ -131,7 +142,7 @@ export default function AcademiaHome() {
 
       try {
         localStorage.setItem('@omegaGym:calcFCM', JSON.stringify({ idade: idadeFcm, resultado }));
-      } catch {}
+      } catch { }
     }
   };
 
@@ -159,10 +170,42 @@ export default function AcademiaHome() {
 
       try {
         localStorage.setItem('@omegaGym:calcBPM', JSON.stringify({ batimentos: batimentos10s, resultado: bpmCalculado, zona }));
-      } catch {}
+      } catch { }
     }
   };
 
+
+  if (isChecking) {
+    return <div className="bg-black min-h-screen"></div>;
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="bg-black text-white min-h-screen font-sans flex flex-col items-center justify-center p-6 space-y-8 relative overflow-hidden">
+        {/* Efeito visual decorativo de fundo */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/20 blur-[100px] rounded-full pointer-events-none"></div>
+
+        {/* Logo central e titulo */}
+        <div className="z-10 text-center space-y-4">
+          <Image src="/logo.jpeg" alt="Logo" width={90} height={90} className="mx-auto rounded-2xl shadow-xl shadow-blue-500/10 border border-zinc-800" />
+          <h1 className="text-3xl font-black uppercase tracking-tight">ÔMEGA<span className="text-blue-500">GYM</span></h1>
+          <p className="text-gray-400 text-sm max-w-xs mx-auto leading-relaxed">
+            Sua jornada fitness começa aqui. Para acessar sua ficha de treinos, o acompanhamento de hidratação e nossas calculadoras exclusivas, faça login agora!
+          </p>
+        </div>
+
+        {/* Botões Grandes de Acesso */}
+        <div className="z-10 flex flex-col gap-4 w-full max-w-xs mt-4">
+          <Link href="/login" className="bg-blue-500 hover:bg-blue-600 text-white font-black py-4 text-center rounded-xl uppercase tracking-wider shadow-lg shadow-blue-500/30 active:scale-95 transition-all">
+            Fazer Login
+          </Link>
+          <Link href="/cadastro" className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white font-bold py-4 text-center rounded-xl uppercase tracking-wider active:scale-95 transition-all">
+            Criar Minha Conta
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-black text-white min-h-screen font-sans flex flex-col justify-between relative overflow-x-hidden">
@@ -202,13 +245,12 @@ export default function AcademiaHome() {
               ) : (
                 <Link
                   href="/perfil"
-                  className={`border text-xs font-bold px-3 py-1.5 rounded-full transition flex items-center gap-1.5 ${
-                    usuario?.role === 'admin'
-                      ? 'border-purple-500 text-purple-400 hover:bg-purple-500/10'
-                      : usuario?.role === 'personal'
+                  className={`border text-xs font-bold px-3 py-1.5 rounded-full transition flex items-center gap-1.5 ${usuario?.role === 'admin'
+                    ? 'border-purple-500 text-purple-400 hover:bg-purple-500/10'
+                    : usuario?.role === 'personal'
                       ? 'border-amber-500 text-amber-400 hover:bg-amber-500/10'
                       : 'border-blue-500 text-blue-400 hover:bg-blue-500/10'
-                  }`}
+                    }`}
                 >
                   <span>{usuario?.role === 'admin' ? '🛡️' : usuario?.role === 'personal' ? '🏋️' : '👤'}</span>
                   <span className="hidden sm:inline">{usuario?.nome?.split(' ')[0] || 'Meu Perfil'}</span>
@@ -241,9 +283,8 @@ export default function AcademiaHome() {
         />
       )}
       <div
-        className={`fixed top-0 right-0 h-full w-72 bg-zinc-900 border-l border-zinc-800 z-50 transform transition-transform duration-300 flex flex-col ${
-          menuAberto ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed top-0 right-0 h-full w-72 bg-zinc-900 border-l border-zinc-800 z-50 transform transition-transform duration-300 flex flex-col ${menuAberto ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
           <div>
@@ -251,13 +292,12 @@ export default function AcademiaHome() {
               Menu ÔMEGA GYM
             </span>
             {usuario && (
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border mt-1 inline-block ${
-                usuario.role === 'admin'
-                  ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
-                  : usuario.role === 'personal'
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border mt-1 inline-block ${usuario.role === 'admin'
+                ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
+                : usuario.role === 'personal'
                   ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
                   : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-              }`}>
+                }`}>
                 {usuario.role === 'admin' ? '🛡️ Administrador' : usuario.role === 'personal' ? '🏋️ Personal' : '🎓 Aluno'}
               </span>
             )}
@@ -467,8 +507,8 @@ export default function AcademiaHome() {
                   disabled={cronometroRodando}
                   onClick={iniciarCronometro}
                   className={`px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition ${cronometroRodando
-                      ? 'bg-zinc-800 text-gray-500 cursor-not-allowed'
-                      : 'bg-blue-500 text-white hover:bg-blue-600 active:scale-95'
+                    ? 'bg-zinc-800 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-500 text-white hover:bg-blue-600 active:scale-95'
                     }`}
                 >
                   {cronometroRodando ? 'Contando...' : 'Iniciar 10 Segundos'}
